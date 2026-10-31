@@ -1,0 +1,22 @@
+= Package `it.ddot.core.kbase.io`
+:icons: font
+// ddot.it/off
+
+The `ISourceHandler` implementations that put ddot.it triple events into a `Kgraph`.
+They moved here from `it.ddot.core.io.handler` in `ddotit-core`, which must not depend on the knowledge model.
+
+.Data flow
+----
+host reader --lines--> Source2TripleEvents --IDdotEvent--> TripleEvent2Kgraph --> Kgraph
+            (ddotit-core)                                  (this package)
+            \________________________ Source2Kgraph ________________________/
+----
+
+.Contents
+TripleEvent2Kgraph:: Adds each `IDdotEvent` to a `Kgraph` as a subject -> predicate -> object edge. Node id == text, so
+pattern queries hit the SPO index; labels may collide. Source location is recorded on the edge, and the triple's metadata
+is stored flat in the edge's `data` JSON, readable via `Kedge.meta()`.
+IKgraphSourceHandler:: An `ISourceHandler` that also exposes its `Kgraph`, so a reader can add data beyond triples.
+It is also an `Adoc2Kg.IHandler`: the AsciiDoc reader in core hands the document and section nodes it finds to any
+handler that is one, and the default `createNode` creates them in the `Kgraph` with their label, type and inline HTML.
+Source2Kgraph:: Convenience `IKgraphSourceHandler` chaining `Source2TripleEvents` and `TripleEvent2Kgraph` into one `Kgraph`.

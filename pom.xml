@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Standalone on purpose, like ddotit-core: NO <parent>, everything this module needs is declared here. -->
+    <groupId>it.ddot</groupId>
+    <artifactId>ddotit-kbase</artifactId>
+    <version>0.3.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>ddot.it kbase</name>
+    <description>
+        The ddot.it knowledge model (Kbase, Kgraph, Knode, Kedge) on top of ddotit-core, built on graphinout's
+        JSON document types; plus the handlers that turn ddot.it triple events into a Kgraph.
+    </description>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <ddotit-core.version>0.3.0</ddotit-core.version>
+        <graphinout.version>0.2.2-SNAPSHOT</graphinout.version>
+        <junit.version>5.14.3</junit.version>
+        <truth.version>1.4.5</truth.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>it.ddot</groupId>
+            <artifactId>ddotit-core</artifactId>
+            <version>${ddotit-core.version}</version>
+        </dependency>
+        <!-- graphinout's JSON document and CJ types; brings foundation-*, jackson and slf4j -->
+        <dependency>
+            <groupId>com.graphinout</groupId>
+            <artifactId>base-api</artifactId>
+            <version>${graphinout.version}</version>
+        </dependency>
+
+        <!-- Testing (test scope only; never on a consumer's classpath) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+            <version>${truth.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <!-- Vulnerable (CVE-2026-110257 et al.); Truth only uses it to enrich failure messages -->
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <!--
+              Guards the BUILD CYCLE.
+
+              graphinout's reader-ddot depends on ddot-core. This module may therefore only depend on
+              graphinout modules that sit BELOW reader-ddot in the stack, and no graphinout module may
+              depend on this one through reader-ddot:
+
+                  base-api, foundation-*   ->  ddotit-kbase
+                  ddotit-core              ->  ddotit-kbase
+                  ddotit-core              ->  base  ->  reader-ddot
+
+              Reaching for com.graphinout:base itself, or any reader, the engine or the cli, closes the
+              loop and makes the repositories unbuildable from a clean ~/.m2. The rule below is exactly
+              that line: every com.graphinout artifact is banned, and only the below-the-line modules are
+              re-allowed. The 5th pattern segment is the scope, so test-scope trees stay untouched.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>ddot-kbase-must-not-close-the-graphinout-cycle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <searchTransitive>true</searchTransitive>
+                                    <message>
+                                        ddotit-kbase may depend only on graphinout modules that sit BELOW
+                                        reader-ddot: base-api and foundation-*. Depending on
+                                        com.graphinout:base (or any reader / engine / cli) closes a build
+                                        cycle and makes the repositories unbuildable from a clean ~/.m2.
+                                    </message>
+                                    <excludes>
+                                        <exclude>com.graphinout:*:*:*:compile</exclude>
+                                        <exclude>com.graphinout:*:*:*:runtime</exclude>
+                                        <exclude>com.graphinout:*:*:*:provided</exclude>
+                                        <exclude>com.graphinout:*:*:*:system</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <include>com.graphinout:base-api:*:*:compile</include>
+                                        <include>com.graphinout:foundation-pure:*:*:compile</include>
+                                        <include>com.graphinout:foundation-jvm:*:*:compile</include>
+                                        <include>com.graphinout:foundation-shared:*:*:compile</include>
+                                        <include>com.graphinout:foundation-emulation:*:*:compile</include>
+                                    </includes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>github-maven-repo</id>
+            <name>GitHub calpano Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/calpano/ddot.it-java-kbase</url>
+        </repository>
+    </distributionManagement>
+
+</project>

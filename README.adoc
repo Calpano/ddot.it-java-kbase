@@ -1,0 +1,64 @@
+= Ddot.it Java Kbase
+:toc:
+:icons: font
+:url-graphinout: https://github.com/calpano/graphinout
+
+The ddot.it knowledge model in Java -- `Kbase`, `Kgraph`, `Knode`, `Kedge` -- and the handlers that turn ddot.it triple
+events into a `Kgraph`. Artifact: `it.ddot:ddotit-kbase`.
+
+It was split out of link:../ddot.it-java-core[`ddot.it-java-core`] (`it.ddot:ddotit-core`) because the model is built on
+link:{url-graphinout}[graphinout]'s JSON document types, and core must depend on nothing but jspecify.
+
+[[packages]]
+== Packages
+
+The packages keep the names they had in core, so code using them only needs this artifact on its classpath.
+
+.Contents
+* link:src/main/java/it/ddot/core/kbase/README.adoc[`it.ddot.core.kbase`] -- the knowledge-model API (bases, graphs,
+  nodes, hyperedges, labels, resources), the flat triple facade `IDdotItKnowledgeBase`, and Connected JSON conversion.
+* link:src/main/java/it/ddot/core/kbase/inmem/README.adoc[`it.ddot.core.kbase.inmem`] -- the in-memory implementation.
+* link:src/main/java/it/ddot/core/kbase/resource/README.adoc[`it.ddot.core.kbase.resource`] -- content attached to items.
+* link:src/main/java/it/ddot/core/kbase/io/README.adoc[`it.ddot.core.kbase.io`] -- `TripleEvent2Kgraph`,
+  `Source2Kgraph`, `IKgraphSourceHandler`. These were in `it.ddot.core.io.handler` in core.
+
+[[dependencies]]
+== Dependencies
+
+.Compile scope
+* `it.ddot:ddotit-core` (and its only dependency, `org.jspecify:jspecify`)
+* `com.graphinout:base-api`, which brings `foundation-*`, Jackson 3 and slf4j
+
+The Maven Enforcer rule in `pom.xml` bans every other graphinout module: graphinout's `reader-ddot` depends on
+`ddotit-core`, so depending on `com.graphinout:base` or anything above it would close a build cycle.
+
+[[migrating]]
+== Migrating from `ddotit-core` 0.2.x
+
+. Add the dependency:
++
+[source,xml]
+----
+<dependency>
+    <groupId>it.ddot</groupId>
+    <artifactId>ddotit-kbase</artifactId>
+    <version>0.3.0-SNAPSHOT</version>
+</dependency>
+----
+. Replace `it.ddot.core.io.handler.TripleEvent2Kgraph`, `.Source2Kgraph` and `.IKgraphSourceHandler` imports with
+  `it.ddot.core.kbase.io.*`. All `it.ddot.core.kbase.*` imports stay as they are.
+. `AsciiDocReader` no longer casts its handler to `IKgraphSourceHandler`: it creates document and section nodes only when
+  the handler implements `Adoc2Kg.IHandler`, which `IKgraphSourceHandler` does by default. A handler without a `Kgraph`
+  now gets the triple events instead of a `ClassCastException`.
+. `AsciiDocReader.gioFileFormat()` is gone; nothing used it.
+
+[[build]]
+== Building
+
+`ddot.it-java-core` must be installed first:
+
+.Commands
+* `(cd ../ddot.it-java-core && mvn install)`
+* `mvn install`
+
+Java 25 or newer is required.
