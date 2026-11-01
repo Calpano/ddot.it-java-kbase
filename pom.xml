@@ -46,8 +46,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <ddotit-core.version>0.3.0</ddotit-core.version>
-        <graphinout.version>0.2.2-SNAPSHOT</graphinout.version>
+        <ddotit-core.version>0.3.1</ddotit-core.version>
+        <graphinout.version>0.2.2</graphinout.version>
         <junit.version>5.14.3</junit.version>
         <truth.version>1.4.5</truth.version>
     </properties>
